@@ -1,0 +1,29 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&family=Sora:wght@400;600;700;800&display=swap');
+
+@layer base {
+  body {
+    @apply bg-navy text-gray-100 font-body antialiased;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+}
+
+@layer components {
+  .glass-panel {
+    @apply bg-surface bg-opacity-70 backdrop-blur-md border border-border rounded-2xl shadow-xl;
+  }
+  
+  .btn-primary {
+    @apply bg-teal text-navy font-semibold px-6 py-3 rounded-full hover:bg-opacity-90 transition-all duration-300 transform hover:-translate-y-1 shadow-[0_0_15px_rgba(0,245,212,0.3)] hover:shadow-[0_0_25px_rgba(0,245,212,0.5)];
+  }
+  
+  .btn-secondary {
+    @apply bg-transparent border border-border text-gray-300 font-semibold px-6 py-3 rounded-full hover:bg-surface transition-all duration-300;
+  }
+}
