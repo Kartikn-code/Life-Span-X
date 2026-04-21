@@ -12,20 +12,34 @@ export default function ManualHistory() {
   const { updateUserData } = useUser();
   const [history, setHistory] = useState([]);
 
+  const [fetchError, setFetchError] = useState(null);
+
   useEffect(() => {
     const fetchHistory = async () => {
-      const { data, error } = await supabase
-        .from('patient_records')
-        .select('*')
-        .order('id', { ascending: true });
+      try {
+        console.log("Fetching from Supabase...");
+        const { data, error } = await supabase
+          .from('patient_records')
+          .select('*')
+          .order('id', { ascending: true });
+          
+        console.log("Supabase response:", { data, error });
         
-      if (!error && data) {
-        // Map 'userdata' column from supabase back to 'userData' for the UI
-        const formattedData = data.map(row => ({
-          ...row,
-          userData: row.userdata
-        }));
-        setHistory(formattedData);
+        if (error) {
+          setFetchError(error.message);
+          return;
+        }
+        
+        if (data) {
+          const formattedData = data.map(row => ({
+            ...row,
+            userData: row.userdata || {}
+          }));
+          setHistory(formattedData);
+        }
+      } catch (err) {
+        console.error("Fetch Exception:", err);
+        setFetchError(err.message);
       }
     };
     fetchHistory();
@@ -40,6 +54,21 @@ export default function ManualHistory() {
         
       if (!error) {
         setHistory([]);
+      }
+    }
+  };
+
+  const deleteSingleRecord = async (id) => {
+    if (window.confirm("Delete this specific record?")) {
+      const { error } = await supabase
+        .from('patient_records')
+        .delete()
+        .eq('id', id);
+        
+      if (!error) {
+        setHistory(prev => prev.filter(record => record.id !== id));
+      } else {
+        setFetchError("Failed to delete record: " + error.message);
       }
     }
   };
@@ -119,6 +148,12 @@ export default function ManualHistory() {
       </div>
 
       <div className="glass-panel overflow-hidden border border-border">
+        {fetchError && (
+          <div className="p-4 bg-danger/10 border-b border-danger/30 text-danger text-center">
+            Database Connection Error: {fetchError}
+          </div>
+        )}
+        
         {history.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
             No manual patient records found. Complete a manual entry to start saving history.
@@ -171,9 +206,14 @@ export default function ManualHistory() {
                         <span className="text-xs text-gray-400">{record.score.toFixed(1)} / 100</span>
                       </td>
                       <td className="p-4 text-right">
-                        <button onClick={() => loadRecord(record)} className="text-teal hover:underline text-sm font-medium">
-                          Load Profile
-                        </button>
+                        <div className="flex flex-col items-end gap-3">
+                          <button onClick={() => loadRecord(record)} className="text-teal hover:underline text-sm font-medium">
+                            Load Profile
+                          </button>
+                          <button onClick={() => deleteSingleRecord(record.id)} className="text-danger hover:text-red-400 text-xs flex items-center gap-1 transition-colors">
+                            <Trash2 className="w-3 h-3" /> Delete
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
