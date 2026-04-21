@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import { useUser } from '../context/UserContext';
+import { supabase } from '../lib/supabase';
 
 export default function ManualHistory() {
   const navigate = useNavigate();
@@ -12,16 +13,34 @@ export default function ManualHistory() {
   const [history, setHistory] = useState([]);
 
   useEffect(() => {
-    const saved = localStorage.getItem('lifelytics_manual_history');
-    if (saved) {
-      setHistory(JSON.parse(saved));
-    }
+    const fetchHistory = async () => {
+      const { data, error } = await supabase
+        .from('patient_records')
+        .select('*')
+        .order('id', { ascending: true });
+        
+      if (!error && data) {
+        // Map 'userdata' column from supabase back to 'userData' for the UI
+        const formattedData = data.map(row => ({
+          ...row,
+          userData: row.userdata
+        }));
+        setHistory(formattedData);
+      }
+    };
+    fetchHistory();
   }, []);
 
-  const clearHistory = () => {
-    if (window.confirm("Are you sure you want to clear all patient records?")) {
-      localStorage.removeItem('lifelytics_manual_history');
-      setHistory([]);
+  const clearHistory = async () => {
+    if (window.confirm("Are you sure you want to clear ALL patient records globally?")) {
+      const { error } = await supabase
+        .from('patient_records')
+        .delete()
+        .neq('id', '0'); // deletes everything
+        
+      if (!error) {
+        setHistory([]);
+      }
     }
   };
 

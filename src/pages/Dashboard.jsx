@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
 import { calculateLifespan } from '../ml/healthPredictEngine';
+import { supabase } from '../lib/supabase';
 import LifeScoreGauge from '../components/LifeScoreGauge';
 import RiskRadar from '../components/RiskRadar';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts';
@@ -27,31 +28,34 @@ export default function Dashboard() {
       
       if (userData.isNewEntry && !hasSaved.current) {
         hasSaved.current = true;
-        const history = JSON.parse(localStorage.getItem('lifelytics_manual_history') || '[]');
         
-        // Prevent StrictMode double-save by checking timestamp of last entry
-        const now = Date.now();
-        if (history.length > 0 && (now - history[history.length - 1].id < 2000)) {
-           updateUserData({ isNewEntry: false });
-        } else {
-          // Remove the flag so it doesn't get saved into the history
-          const dataToSave = { ...userData };
-          delete dataToSave.isNewEntry;
+        // Remove the flag so it doesn't get saved into the DB
+        const dataToSave = { ...userData };
+        delete dataToSave.isNewEntry;
 
-          const newEntry = {
-              id: now,
-              date: new Date().toISOString(),
-              userData: dataToSave,
-              prediction: result.prediction,
-              base: result.base,
-              score: Math.min(100, Math.max(0, (result.prediction / 100) * 100))
-          };
-          history.push(newEntry);
-          localStorage.setItem('lifelytics_manual_history', JSON.stringify(history));
-
-          // Clear the flag from UserContext so reloads/loads don't duplicate
-          updateUserData({ isNewEntry: false });
+        const newEntry = {
+            id: Date.now().toString(),
+            date: new Date().toISOString(),
+            userdata: dataToSave,
+            prediction: result.prediction,
+            base: result.base,
+            score: Math.min(100, Math.max(0, (result.prediction / 100) * 100))
+        };
+        
+        try {
+          const { error } = await supabase
+            .from('patient_records')
+            .insert([newEntry]);
+            
+          if (error) {
+            console.error('Error saving to Supabase:', error);
+          }
+        } catch (err) {
+          console.error('Failed to save to Supabase:', err);
         }
+
+        // Clear the flag from UserContext so reloads/loads don't duplicate
+        updateUserData({ isNewEntry: false });
       }
 
       setPredictions(result);
