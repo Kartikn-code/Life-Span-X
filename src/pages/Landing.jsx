@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Activity, Shield, Brain, ChevronDown } from 'lucide-react';
+import { ArrowRight, Activity, Shield, Brain, ChevronDown, Heart } from 'lucide-react';
 
 const DNAHelix = () => {
   return (
@@ -73,13 +73,29 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative pt-32 pb-20 px-6 md:px-12 max-w-7xl mx-auto flex flex-col md:flex-row items-center">
         <div className="md:w-1/2 z-10 text-center md:text-left mb-16 md:mb-0">
+          <motion.div 
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="flex items-center justify-center md:justify-start gap-3 mb-6"
+          >
+            <div className="relative w-14 h-14">
+              <div className="absolute inset-0 bg-teal/20 rounded-xl border border-teal/30 flex items-center justify-center">
+                <Heart className="w-8 h-8 text-teal fill-teal/20" />
+              </div>
+              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-lg flex items-center justify-center shadow-lg">
+                <span className="text-navy font-bold text-xs">L</span>
+              </div>
+            </div>
+            <span className="text-3xl font-bold tracking-tight text-white ml-2">LifeLytics</span>
+          </motion.div>
+
           <motion.h1 
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
             className="text-5xl md:text-7xl font-bold leading-tight mb-6"
           >
-            Explainable <br />
+            LifeLytics <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-teal to-blue-500">Health Intelligence</span>
           </motion.h1>
           
@@ -178,38 +194,6 @@ export default function Landing() {
               </div>
               <h3 className="text-2xl font-semibold mb-4 relative z-10">{step.title}</h3>
               <p className="text-gray-400 relative z-10">{step.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* Testimonials */}
-      <section className="py-24 px-6 max-w-7xl mx-auto relative">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold mb-4">Simulated Case Studies</h2>
-          <p className="text-gray-400 max-w-2xl mx-auto border border-amber/30 bg-amber/10 text-amber px-4 py-2 rounded-full inline-block text-sm">Synthetic Data - Demo Purpose Only</p>
-        </div>
-        
-        <div className="grid md:grid-cols-2 gap-8">
-          {[
-            { name: 'Priya S.', age: 34, quote: 'The counterfactual simulator showed me that just 20 mins of daily walking would add 3.2 years to my life. Incredible.', badge: 'Extended by 4.5 yrs' },
-            { name: 'Rahul M.', age: 45, quote: 'Using the dashboard, I realized how much my stress levels were impacting my heart disease risk. The 12-week plan changed everything.', badge: 'Risk lowered 28%' }
-          ].map((test, i) => (
-            <motion.div 
-              key={i}
-              initial={{ scale: 0.95, opacity: 0 }}
-              whileInView={{ scale: 1, opacity: 1 }}
-              viewport={{ once: true }}
-              className="glass-panel p-8"
-            >
-              <div className="flex justify-between items-start mb-6">
-                <div>
-                  <h4 className="font-semibold text-lg">{test.name}</h4>
-                  <p className="text-gray-400 text-sm">Age {test.age}</p>
-                </div>
-                <span className="bg-teal/20 text-teal px-3 py-1 rounded-full text-xs font-semibold">{test.badge}</span>
-              </div>
-              <p className="text-gray-300 italic">"{test.quote}"</p>
             </motion.div>
           ))}
         </div>
