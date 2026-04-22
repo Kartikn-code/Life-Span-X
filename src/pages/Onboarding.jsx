@@ -1,343 +1,264 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Send, 
-  User, 
-  Brain, 
-  History, 
-  PlusCircle, 
-  Trash2, 
-  ChevronRight, 
-  Activity,
-  Download,
-  Zap,
-  ShieldCheck
-} from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Send, User, Bot, Loader2, Camera, ShieldAlert } from 'lucide-react';
 import { useUser } from '../context/UserContext';
-import { supabase } from '../lib/supabase';
+// import BioSelfieScan from '../components/BioSelfieScan';
 
-/**
- * Onboarding Component - Final High-Fidelity Build
- * Optimized with Clinical History Portal and Reduced Top Spacing.
- */
+const CHAT_QUESTIONS = [
+  { key: 'age', text: "Welcome to LifeLytics AI. To begin your assessment, what is your age?", type: 'number', placeholder: 'e.g. 35', min: 18, max: 120 },
+  { key: 'gender', text: "What is your biological gender?", type: 'select', options: [{ label: 'Male', value: 'male' }, { label: 'Female', value: 'female' }] },
+  {
+    key: 'country', text: "What country do you live in? (Used for dietary and geographic baselines)", type: 'select', options: [
+      { label: 'United States', value: 'USA' }, { label: 'United Kingdom', value: 'UK' },
+      { label: 'India', value: 'India' }, { label: 'Canada', value: 'Canada' },
+      { label: 'Australia', value: 'Australia' }, { label: 'Other', value: 'Other' }
+    ]
+  },
+  { key: 'height', text: "What is your height in centimeters?", type: 'number', placeholder: 'e.g. 175', min: 50, max: 250 },
+  { key: 'weight', text: "What is your weight in kilograms?", type: 'number', placeholder: 'e.g. 70', min: 20, max: 300 },
+  { key: 'blood_pressure', text: "What is your typical systolic blood pressure? (If unsure, enter 120)", type: 'number', placeholder: 'e.g. 120', min: 70, max: 250 },
+  { key: 'cholesterol', text: "What is your total cholesterol level? (If unsure, enter 180)", type: 'number', placeholder: 'e.g. 180', min: 100, max: 500 },
+  { key: 'glucose', text: "What is your fasting glucose level? (If unsure, enter 90)", type: 'number', placeholder: 'e.g. 90', min: 40, max: 400 },
+  { key: 'exercise_level', text: "How often do you exercise?", type: 'select', options: [{ label: 'Sedentary (No exercise)', value: '0' }, { label: 'Light (1-2x/wk)', value: '1' }, { label: 'Moderate (3-4x/wk)', value: '2' }, { label: 'High (5+x/wk)', value: '3' }] },
+  { key: 'smoking', text: "Do you currently smoke?", type: 'boolean' },
+  { key: 'alcohol', text: "Do you regularly consume alcohol?", type: 'boolean' },
+  { key: 'sleep_hours', text: "On average, how many hours do you sleep per night?", type: 'number', placeholder: 'e.g. 7', min: 2, max: 15 },
+  { key: 'stress_level', text: "How would you rate your daily stress level? (1-5)", type: 'select', options: [{ label: '1 - Minimal', value: '1' }, { label: '2 - Low', value: '2' }, { label: '3 - Moderate', value: '3' }, { label: '4 - High', value: '4' }, { label: '5 - Extreme', value: '5' }] },
+  { key: 'fruit_intake', text: "How many servings of fruit do you eat daily?", type: 'number', placeholder: 'e.g. 2', min: 0, max: 10 },
+  { key: 'vegetable_intake', text: "How many servings of vegetables do you eat daily?", type: 'number', placeholder: 'e.g. 3', min: 0, max: 12 },
+  { key: 'processed_food', text: "How often do you consume processed/fast food?", type: 'select', options: [{ label: 'Rarely/Never', value: '0' }, { label: 'Occasionally (1-2x/wk)', value: '1' }, { label: 'Frequently (3+x/wk)', value: '2' }] },
+  { key: 'heart_disease', text: "Have you ever been diagnosed with heart disease?", type: 'boolean' },
+  { key: 'diabetes', text: "Have you been diagnosed with diabetes?", type: 'boolean' },
+  { key: 'stroke', text: "Have you ever suffered a stroke?", type: 'boolean' }
+];
+
 export default function Onboarding() {
-  const [activeTab, setActiveTab] = useState('assessment'); // 'assessment' or 'history'
-  const [messages, setMessages] = useState([
-    { role: 'bot', text: 'Welcome to LifeLytics AI. To begin your high-fidelity assessment, what is your current age?' }
-  ]);
-  const [input, setInput] = useState('');
-  const [step, setStep] = useState(0);
-  const [history, setHistory] = useState([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
-  const scrollRef = useRef(null);
   const navigate = useNavigate();
   const { updateUserData, engineEnabled } = useUser();
 
-  // History Fetching
+  const [messages, setMessages] = useState(() => {
+    const saved = localStorage.getItem('onboarding_messages');
+    return saved ? JSON.parse(saved) : [];
+  });
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(() => {
+    const saved = localStorage.getItem('onboarding_index');
+    return saved ? parseInt(saved) : 0;
+  });
+  const [formData, setFormData] = useState(() => {
+    const saved = localStorage.getItem('onboarding_form');
+    return saved ? JSON.parse(saved) : {};
+  });
+  const [inputValue, setInputValue] = useState('');
+  const [isTyping, setIsTyping] = useState(false);
+  const [showBioScan, setShowBioScan] = useState(false);
+  const messagesEndRef = useRef(null);
+
+  // Initial greeting or resume
   useEffect(() => {
-    if (activeTab === 'history') {
-      fetchHistory();
-    }
-  }, [activeTab]);
-
-  const fetchHistory = async () => {
-    setLoadingHistory(true);
-    try {
-      const { data, error } = await supabase
-        .from('patient_records')
-        .select('*')
-        .order('id', { ascending: false });
-      
-      if (data) {
-        setHistory(data);
-      }
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoadingHistory(false);
-    }
-  };
-
-  const deleteRecord = async (id) => {
-    if (window.confirm("Confirm deletion of clinical record?")) {
-      const { error } = await supabase.from('patient_records').delete().eq('id', id);
-      if (!error) setHistory(prev => prev.filter(r => r.id !== id));
-    }
-  };
-
-  const loadRecord = (record) => {
-    updateUserData(record.userdata || {});
-    navigate('/dashboard');
-  };
-
-  // AI Chat Logic with Clinical Validations
-  const questions = [
-    { 
-      field: 'age', 
-      next: 'gender', 
-      text: 'To begin your high-fidelity assessment, what is your current age?',
-      type: 'number',
-      validate: (v) => {
-        const n = parseInt(v);
-        if (isNaN(n)) return "Please enter a numeric value for your age.";
-        if (n < 18) return "Clinical assessment is only available for adults (18+).";
-        if (n > 120) return "Please enter a biologically plausible age (under 120).";
-        return null;
-      }
-    },
-    { 
-      field: 'gender', 
-      next: 'height', 
-      text: 'Excellent. Please select your biological gender for baseline physiological calibration.',
-      type: 'select',
-      options: ['Male', 'Female', 'Other'],
-      validate: (v) => {
-        const val = v.toLowerCase();
-        if (val === 'male' || val === 'female' || val === 'other') return null;
-        return "Please select or type Male, Female, or Other.";
-      }
-    },
-    { 
-      field: 'height', 
-      next: 'weight', 
-      text: 'What is your current height in centimeters?',
-      type: 'number',
-      validate: (v) => {
-        const n = parseInt(v);
-        if (isNaN(n)) return "Please enter your height in centimeters (e.g., 175).";
-        if (n < 50 || n > 250) return "Please enter a valid height between 50cm and 250cm.";
-        return null;
-      }
-    },
-    { 
-      field: 'weight', 
-      next: 'complete', 
-      text: 'And your current weight in kilograms?',
-      type: 'number',
-      validate: (v) => {
-        const n = parseInt(v);
-        if (isNaN(n)) return "Please enter your weight in kilograms (e.g., 75).";
-        if (n < 20 || n > 400) return "Please enter a valid weight between 20kg and 400kg.";
-        return null;
-      }
-    }
-  ];
-
-  const handleSend = (overrideValue = null) => {
-    const val = overrideValue || input;
-    if (!val.trim() || !engineEnabled) return;
-    
-    const currentQuestion = questions[step];
-    const error = currentQuestion.validate(val);
-
-    if (error) {
-      setMessages(prev => [
-        ...prev, 
-        { role: 'user', text: val },
-        { role: 'bot', text: `⚠️ ${error}` }
-      ]);
-      setInput('');
-      return;
-    }
-
-    const newMessages = [...messages, { role: 'user', text: val }];
-    setMessages(newMessages);
-    updateUserData({ [currentQuestion.field]: val });
-
-    if (currentQuestion.next === 'complete') {
-      setMessages(prev => [...prev, { role: 'bot', text: 'Neural engine initialized. Analyzing your biomarker trajectory...' }]);
-      setTimeout(() => navigate('/dashboard'), 1500);
-    } else {
+    if (messages.length === 0) {
+      setIsTyping(true);
       setTimeout(() => {
-        const nextQ = questions[step + 1];
-        setMessages(prev => [...prev, { role: 'bot', text: nextQ.text }]);
-        setStep(step + 1);
-      }, 600);
+        setMessages([{ sender: 'bot', text: CHAT_QUESTIONS[0].text }]);
+        setIsTyping(false);
+      }, 1000);
     }
-    
-    setInput('');
+  }, []);
+
+  // Save progress
+  useEffect(() => {
+    localStorage.setItem('onboarding_messages', JSON.stringify(messages));
+    localStorage.setItem('onboarding_index', currentQuestionIndex.toString());
+    localStorage.setItem('onboarding_form', JSON.stringify(formData));
+  }, [messages, currentQuestionIndex, formData]);
+
+  // Auto-scroll
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages, isTyping]);
+
+  const handleNextQuestion = (value, displayValue) => {
+    const currentQ = CHAT_QUESTIONS[currentQuestionIndex];
+
+    // Validation Logic
+    if (currentQ.type === 'number') {
+      const num = parseFloat(value);
+      if (isNaN(num)) {
+        setMessages(prev => [...prev, { sender: 'user', text: displayValue }, { sender: 'bot', text: "Please enter a valid number." }]);
+        setInputValue('');
+        return;
+      }
+      if ((currentQ.min !== undefined && num < currentQ.min) || (currentQ.max !== undefined && num > currentQ.max)) {
+        setMessages(prev => [
+          ...prev,
+          { sender: 'user', text: displayValue },
+          { sender: 'bot', text: `That value seems out of range. Please enter a value between ${currentQ.min} and ${currentQ.max}.` }
+        ]);
+        setInputValue('');
+        return;
+      }
+    }
+
+    // Add user message
+    setMessages(prev => [...prev, { sender: 'user', text: displayValue }]);
+
+    // Save data
+    const newFormData = { ...formData, [currentQ.key]: value };
+    setFormData(newFormData);
+    setInputValue('');
+    setIsTyping(true);
+
+    const nextIndex = currentQuestionIndex + 1;
+
+    setTimeout(() => {
+      /* 
+      // Trigger Bio Scan after weight is entered
+      if (currentQ.key === 'weight') {
+        setShowBioScan(true);
+        return;
+      }
+      */
+
+      if (nextIndex < CHAT_QUESTIONS.length) {
+        setMessages(prev => [...prev, { sender: 'bot', text: CHAT_QUESTIONS[nextIndex].text }]);
+        setCurrentQuestionIndex(nextIndex);
+        setIsTyping(false);
+      } else {
+        setMessages(prev => [...prev, { sender: 'bot', text: "Thank you. Analysing your health markers now..." }]);
+
+        // Calculate BMI and finalize
+        setTimeout(() => {
+          const bmi = newFormData.height && newFormData.weight
+            ? (newFormData.weight / Math.pow(newFormData.height / 100, 2)).toFixed(1)
+            : '25.0';
+
+          const finalData = {
+            ...newFormData,
+            bmi: parseFloat(bmi),
+            isNewEntry: true // FLAG FOR DASHBOARD
+          };
+
+          // Clear onboarding persistence
+          localStorage.removeItem('onboarding_messages');
+          localStorage.removeItem('onboarding_index');
+          localStorage.removeItem('onboarding_form');
+
+          updateUserData(finalData);
+          navigate('/dashboard');
+        }, 2000);
+      }
+    }, 800);
   };
 
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  /*
+  const handleBioScanComplete = (estimatedAge) => {
+    setShowBioScan(false);
+    setMessages(prev => [...prev, { sender: 'bot', text: `AI analysis complete. Estimated biological age: ${estimatedAge}. I've refined your profile with this biomarker.` }]);
+    
+    // Save the bio age and continue
+    const newFormData = { ...formData, biological_age: estimatedAge };
+    setFormData(newFormData);
+    
+    setIsTyping(true);
+    const nextIndex = currentQuestionIndex + 1;
+    setTimeout(() => {
+      setMessages(prev => [...prev, { sender: 'bot', text: CHAT_QUESTIONS[nextIndex].text }]);
+      setCurrentQuestionIndex(nextIndex);
+      setIsTyping(false);
+    }, 1000);
+  };
+  */
+
+  const handleInputSubmit = (e) => {
+    e.preventDefault();
+    if (!inputValue.trim()) return;
+    handleNextQuestion(inputValue, inputValue);
+  };
+
+  const currentQ = CHAT_QUESTIONS[currentQuestionIndex];
 
   return (
-    <div className="min-h-screen pt-8 pb-12 px-8 max-w-6xl mx-auto">
-      {/* Tab Navigation */}
-      <div className="flex justify-center mb-12">
-        <div className="bg-slate-100 dark:bg-slate-900 p-1.5 rounded-2xl flex gap-1 border border-slate-200 dark:border-slate-800">
-          <button 
-            onClick={() => setActiveTab('assessment')}
-            className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'assessment' ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <PlusCircle className="w-4 h-4" /> New Assessment
-          </button>
-          <button 
-            onClick={() => setActiveTab('history')}
-            className={`px-8 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center gap-2 ${activeTab === 'history' ? 'bg-white dark:bg-slate-800 text-slate-950 dark:text-white shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-          >
-            <History className="w-4 h-4" /> Clinical History
-          </button>
+    <div className="min-h-screen pt-24 pb-12 px-4 md:px-6 max-w-3xl mx-auto flex flex-col">
+      {/* 
+      {showBioScan && (
+        <BioSelfieScan 
+          onScanComplete={handleBioScanComplete} 
+          onCancel={() => {
+            setShowBioScan(false);
+            const nextIndex = currentQuestionIndex + 1;
+            setMessages(prev => [...prev, { sender: 'bot', text: "No problem, we'll continue with standard data collection." }]);
+            setIsTyping(true);
+            setTimeout(() => {
+              setMessages(prev => [...prev, { sender: 'bot', text: CHAT_QUESTIONS[nextIndex].text }]);
+            ))}
+            
+            {isTyping && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex gap-4">
+                <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center flex-shrink-0">
+                  <Bot size={16} />
+                </div>
+                <div className="bg-surface-light dark:bg-surface-dark border border-border-light/50 dark:border-border-dark/50 rounded-2xl rounded-tl-none px-4 py-3 flex gap-1 items-center">
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                  <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.4s' }}></div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          <div ref={messagesEndRef} />
         </div>
-      </div>
 
-      <AnimatePresence mode="wait">
-        {activeTab === 'assessment' ? (
-          <motion.div 
-            key="assessment"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="max-w-3xl mx-auto"
-          >
-            <div className="text-center mb-10">
-              <h1 className="text-5xl font-black tracking-tighter text-slate-950 dark:text-white mb-3">AI Health Assessment</h1>
-              <div className="flex justify-center items-center gap-4">
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-teal flex items-center gap-2">
-                   <ShieldCheck className="w-4 h-4" /> Neural Engine {engineEnabled ? 'Active' : 'Standby'}
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-white dark:bg-slate-900 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 shadow-xl overflow-hidden flex flex-col h-[600px] relative">
-              {!engineEnabled && (
-                <div className="absolute inset-0 bg-white/50 dark:bg-slate-950/50 backdrop-blur-sm z-50 flex items-center justify-center p-12 text-center">
-                  <div className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-rose-500/20 shadow-2xl">
-                    <Activity className="w-12 h-12 text-rose-500 mx-auto mb-4 animate-pulse" />
-                    <h3 className="text-xl font-black text-slate-950 dark:text-white mb-2">Neural Link Interrupted</h3>
-                    <p className="text-sm text-slate-500 font-bold mb-6">Please activate the Neural Engine in the navigation bar to proceed with high-fidelity assessment.</p>
-                  </div>
-                </div>
-              )}
-
-              <div className="flex-1 p-8 overflow-y-auto space-y-6">
-                {messages.map((msg, i) => (
-                  <motion.div 
-                    key={i}
-                    initial={{ opacity: 0, x: msg.role === 'bot' ? -20 : 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    className={`flex ${msg.role === 'bot' ? 'justify-start' : 'justify-end'}`}
-                  >
-                    <div className={`max-w-[80%] p-5 rounded-3xl text-sm font-bold leading-relaxed ${
-                      msg.role === 'bot' 
-                        ? 'bg-slate-50 dark:bg-slate-800/50 text-slate-950 dark:text-gray-200 rounded-bl-none border border-slate-100 dark:border-slate-800/50' 
-                        : 'bg-teal text-slate-950 rounded-br-none shadow-lg shadow-teal/10'
-                    }`}>
-                      {msg.text}
-                      
-                      {/* Selection Options */}
-                      {msg.role === 'bot' && i === messages.length - 1 && questions[step]?.type === 'select' && (
-                        <div className="flex gap-2 mt-4 flex-wrap">
-                          {questions[step].options.map(opt => (
-                            <button
-                              key={opt}
-                              onClick={() => handleSend(opt)}
-                              className="px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-teal hover:text-slate-950 transition-all shadow-sm"
-                            >
-                              {opt}
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-                <div ref={scrollRef} />
-              </div>
-
-              <div className="p-6 bg-slate-50 dark:bg-slate-950/30 border-t border-slate-100 dark:border-slate-800 flex gap-3">
-                <input 
-                  type="text" 
-                  value={input}
-                  disabled={!engineEnabled}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-                  placeholder={engineEnabled ? "Type your response..." : "Engine offline..."}
-                  className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl px-6 py-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-teal/20 transition-all dark:text-white"
-                />
-                <button 
-                  onClick={handleSend}
-                  disabled={!engineEnabled}
-                  className="bg-teal text-slate-950 p-4 rounded-2xl hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-teal/10 disabled:opacity-50"
-                >
-                  <Send className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-          </motion.div>
+        {/* Input Area */}
+      <div className="p-4 border-t border-border-light dark:border-border-dark/50 bg-surface-light/50 dark:bg-surface-dark/50 relative">
+        {!engineEnabled ? (
+          <div className="flex flex-col items-center justify-center py-4 text-center">
+            <ShieldAlert className="w-8 h-8 text-rose-500 mb-2 animate-pulse" />
+            <p className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-tight">Neural Engine Offline</p>
+            <p className="text-[10px] text-slate-600 dark:text-gray-400 font-medium">Please turn on the engine to continue your assessment.</p>
+          </div>
         ) : (
-          <motion.div 
-            key="history"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <div className="flex justify-between items-end mb-10">
-              <div>
-                <h1 className="text-5xl font-black tracking-tighter text-slate-950 dark:text-white mb-3">Clinical History</h1>
-                <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Global Patient Synchronization Layer</p>
-              </div>
-            </div>
+          !isTyping && currentQ && currentQuestionIndex < CHAT_QUESTIONS.length && (
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
 
-            <div className="grid gap-6">
-              {loadingHistory ? (
-                <div className="p-20 text-center text-slate-400 font-black uppercase tracking-widest animate-pulse">Syncing Database...</div>
-              ) : history.length === 0 ? (
-                <div className="p-20 bg-white dark:bg-slate-900 rounded-[2.5rem] border border-dashed border-slate-200 dark:border-slate-800 text-center text-slate-500 font-bold">
-                  No historical records found in the neural cloud.
+              {currentQ.type === 'boolean' && (
+                <div className="flex gap-4 justify-end">
+                  <button onClick={() => handleNextQuestion('1', 'Yes')} className="btn-secondary flex-1 border-teal/50 text-teal hover:bg-teal/10">Yes</button>
+                  <button onClick={() => handleNextQuestion('0', 'No')} className="btn-secondary flex-1 border-gray-600 hover:bg-white/5">No</button>
                 </div>
-              ) : (
-                history.map((record) => (
-                  <motion.div 
-                    key={record.id}
-                    whileHover={{ scale: 1.01 }}
-                    className="bg-white dark:bg-slate-900 p-8 rounded-[2rem] border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between group"
-                  >
-                    <div className="flex items-center gap-8">
-                      <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-2xl">
-                        <User className="w-6 h-6 text-slate-400" />
-                      </div>
-                      <div>
-                        <div className="flex items-center gap-3 mb-1">
-                          <span className="text-xl font-black text-slate-950 dark:text-white capitalize">{record.userdata?.gender || 'N/A'}, {record.userdata?.age}Y</span>
-                          <span className="text-[10px] font-black bg-teal/10 text-teal px-2 py-0.5 rounded-full uppercase tracking-tighter">Clinical Log</span>
-                        </div>
-                        <div className="text-[10px] font-black text-slate-500 uppercase tracking-widest">
-                          ID: {record.id.slice(0, 8)} • {new Date(record.date).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-12">
-                      <div className="text-center">
-                        <div className="text-[10px] font-black text-slate-400 uppercase mb-1">Predicted</div>
-                        <div className="text-2xl font-black text-teal font-mono">{record.prediction} <span className="text-xs">yrs</span></div>
-                      </div>
-                      
-                      <div className="flex items-center gap-3">
-                        <button 
-                          onClick={() => loadRecord(record)}
-                          className="px-6 py-3 rounded-xl bg-slate-950 dark:bg-white text-white dark:text-slate-950 text-xs font-black uppercase tracking-widest flex items-center gap-2 hover:opacity-90 transition-all shadow-lg"
-                        >
-                          Analyze <ChevronRight className="w-4 h-4" />
-                        </button>
-                        <button 
-                          onClick={() => deleteRecord(record.id)}
-                          className="p-3 rounded-xl text-rose-500 hover:bg-rose-50 transition-colors"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))
               )}
-            </div>
-          </motion.div>
+
+              {currentQ.type === 'select' && (
+                <div className="flex flex-col gap-2">
+                  {currentQ.options.map(opt => (
+                    <button key={opt.value} onClick={() => handleNextQuestion(opt.value, opt.label)} className="btn-secondary w-full text-left justify-start">
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {currentQ.type === 'number' && (
+                <form onSubmit={handleInputSubmit} className="flex gap-2">
+                  <input
+                    type="number"
+                    autoFocus
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    placeholder={currentQ.placeholder}
+                    min={currentQ.min}
+                    max={currentQ.max}
+                    className="flex-1 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl px-4 py-3 text-text-light dark:text-text-dark focus:border-teal outline-none"
+                  />
+                  <button type="submit" disabled={!inputValue.trim()} className="bg-teal text-background-dark p-3 rounded-xl hover:bg-teal/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                    <Send size={20} />
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          )
         )}
-      </AnimatePresence>
+      </div>
     </div>
-  );
+
+  )
 }
