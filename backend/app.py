@@ -17,6 +17,14 @@ except Exception as e:
     print(f"Error loading model: {e}")
     model = None
 
+@app.route('/', methods=['GET'])
+def index():
+    return jsonify({
+        "message": "LifeSpanX Neural API is running",
+        "endpoints": ["/predict (POST)", "/health (GET)"],
+        "status": "online"
+    })
+
 @app.route('/health', methods=['GET'])
 def health():
     return jsonify({"status": "healthy", "model_loaded": model is not None})
@@ -58,4 +66,4 @@ def predict():
         return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
-    app.run(port=5001, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)
