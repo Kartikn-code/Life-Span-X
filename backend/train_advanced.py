@@ -46,9 +46,17 @@ def generate_complex_data(n=10000):
     
     return X, y
 
-def train_advanced():
-    print("Generating complex training data...")
-    X, y = generate_complex_data()
+import argparse
+
+def train_advanced(csv_path=None):
+    if csv_path:
+        print(f"Loading training data from {csv_path}...")
+        df = pd.read_csv(csv_path)
+        X = df.drop('lifespan', axis=1)
+        y = df['lifespan']
+    else:
+        print("Generating complex synthetic data...")
+        X, y = generate_complex_data()
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
@@ -67,11 +75,10 @@ def train_advanced():
     model_path = os.path.join(os.path.dirname(__file__), 'lifespan_advanced.joblib')
     joblib.dump(pipeline, model_path)
     print(f"Advanced model saved to {model_path}")
-    
-    # Save feature names for the API
-    with open(os.path.join(os.path.dirname(__file__), 'features.json'), 'w') as f:
-        import json
-        json.dump(list(X.columns), f)
 
 if __name__ == "__main__":
-    train_advanced()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data", help="Path to CSV dataset")
+    args = parser.parse_args()
+    
+    train_advanced(args.data)

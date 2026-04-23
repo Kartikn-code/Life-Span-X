@@ -36,8 +36,9 @@ def predict():
     
     data = request.json
     try:
-        # Preprocess input data to match training features
         # Features: age, gender, bmi, exercise, smoking, alcohol, systolic, cholesterol, glucose
+        feature_names = ['age', 'gender', 'bmi', 'exercise', 'smoking', 'alcohol', 'systolic', 'cholesterol', 'glucose']
+        
         df = pd.DataFrame([{
             'age': float(data.get('age', 40)),
             'gender': 1 if str(data.get('gender')).lower() in ['male', '1'] else 0,
@@ -50,19 +51,34 @@ def predict():
             'glucose': float(data.get('glucose', 90))
         }])
         
+        # Ensure correct column order
+        df = df[feature_names]
+        
         prediction = model.predict(df)[0]
         
-        # Calculate feature importance/contribution (Simplified SHAP-like)
-        # For RF, we can show how much each feature changed the prediction from the baseline
-        # But for now, we'll return a simple response
+        # Extract feature importance from the pipeline's model
+        rf_model = model.named_steps['model']
+        importances = rf_model.feature_importances_
         
+        # Map back to names and scale for UI impact (heuristic)
+        # RF importance is always positive, so we use the direction from Phase 1 linear model logic
+        # Or just return the weights and let the UI handle it.
+        importance_list = []
+        for name, imp in zip(feature_names, importances):
+            importance_list.append({
+                "name": name,
+                "weight": float(imp)
+            })
+
         return jsonify({
             "prediction": float(np.round(prediction, 1)),
-            "model_version": "RandomForest-v1.0",
-            "confidence_interval": [float(np.round(prediction - 3, 1)), float(np.round(prediction + 3, 1))]
+            "model_version": "RandomForest-v1.1",
+            "feature_importance": importance_list,
+            "confidence_interval": [float(np.round(prediction - 2.5, 1)), float(np.round(prediction + 2.5, 1))]
         })
         
     except Exception as e:
+        print(f"Prediction Error: {e}")
         return jsonify({"error": str(e)}), 400
 
 if __name__ == '__main__':
