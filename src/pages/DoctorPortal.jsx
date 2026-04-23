@@ -10,7 +10,7 @@ import { processHealthData } from '../ml/healthPredictEngine';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import { incrementGlobalCounter } from '../utils/stats';
-import { predictLifespan, loadModel } from '../ml/predict';
+import { predictLifespan, loadModel, getActiveModel } from '../ml/predict';
 
 export default function DoctorPortal() {
   const { theme } = useTheme();
@@ -446,9 +446,14 @@ export default function DoctorPortal() {
         <>
           <div className="grid md:grid-cols-3 gap-6">
             <div className="glass-panel p-8 bg-teal/5 border-teal/20">
-              <div className="flex items-center gap-3 mb-4">
-                <BrainCircuit className="text-teal w-6 h-6" />
-                <h3 className="font-bold text-lg text-text-light dark:text-white">AI Predicted Mortality</h3>
+              <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                  <BrainCircuit className="text-teal w-6 h-6" />
+                  <h3 className="font-bold text-lg text-text-light dark:text-white">AI Predicted Mortality</h3>
+                </div>
+                <div className="text-[10px] font-bold px-2 py-1 bg-teal/20 text-teal rounded border border-teal/30 uppercase tracking-tighter">
+                  Source: {getActiveModel().algorithm}
+                </div>
               </div>
               <div className="text-5xl font-bold text-teal mb-2">{aiAnalysis.avgLifespan}</div>
               <p className="text-xs text-gray-500 uppercase tracking-widest">Years Avg Life Expectancy</p>

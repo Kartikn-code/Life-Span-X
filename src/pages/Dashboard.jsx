@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { generateLongevityAudit } from '../utils/pdfGenerator';
 import { incrementGlobalCounter } from '../utils/stats';
+import ModelInsights from '../components/ModelInsights';
 
 export default function Dashboard() {
   const { theme } = useTheme();
@@ -319,6 +320,9 @@ export default function Dashboard() {
               <RiskRadar data={adjustedRadarData} />
             </div>
           </div>
+
+          {/* Machine Learning Feature Insights */}
+          <ModelInsights />
 
           {/* Diagnostic Neural Log */}
           <div className="bg-white dark:bg-slate-900 p-10 rounded-[2.5rem] border border-slate-200 dark:border-slate-800 relative overflow-hidden shadow-sm">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { predictLifespanFast } from '../ml/predict';
+import { predictLifespan } from '../ml/predict';
 import LifeScoreGauge from '../components/LifeScoreGauge';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Save, Settings, Zap, Activity } from 'lucide-react';
@@ -48,21 +48,26 @@ export default function Simulate() {
   }, [userData, predictions, navigate]);
 
   useEffect(() => {
-    if (userData) {
-      // Map simulation sliders back to the categorical/numeric inputs the engine expects
-      const simulatedUser = {
-        ...userData,
-        smoking: sliders.cigarettes > 0 ? '1' : '0',
-        alcohol: sliders.alcohol_units > 0 ? '1' : '0',
-        exercise_level: Math.min(3, Math.floor(sliders.exercise_days / 2)).toString(),
-        sleep_hours: sliders.sleep.toString(),
-        stress_level: Math.min(5, Math.ceil(sliders.stress / 2)).toString(),
-        bmi: sliders.bmi
-      };
-      
-      const result = predictLifespanFast(simulatedUser);
+    if (!userData) return;
+
+    // Map simulation sliders back to the categorical/numeric inputs the engine expects
+    const simulatedUser = {
+      ...userData,
+      smoking: sliders.cigarettes > 0 ? 'yes' : 'never',
+      alcohol: sliders.alcohol_units > 0 ? 'yes' : 'no',
+      exercise_level: Math.min(3, Math.floor(sliders.exercise_days / 2)).toString(),
+      sleep_hours: sliders.sleep.toString(),
+      stress_level: Math.min(5, Math.ceil(sliders.stress / 2)).toString(),
+      bmi: sliders.bmi
+    };
+
+    // Debounce the prediction call to avoid API flooding
+    const timer = setTimeout(async () => {
+      const result = await predictLifespan(simulatedUser);
       setSimData(result);
-    }
+    }, 300);
+
+    return () => clearTimeout(timer);
   }, [sliders, userData]);
 
   if (!userData || !simData) return null;

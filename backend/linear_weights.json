@@ -1,0 +1,26 @@
+{
+  "intercept": 90.10420102307401,
+  "coefficients": {
+    "age": 0.2023964130659791,
+    "gender": -1.9112532331500829,
+    "bmi": -0.2884660790043538,
+    "exercise": 2.268556147684612,
+    "smoking": -7.3727807824828515,
+    "alcohol": -3.164940810029428,
+    "systolic": -0.06558819523602545,
+    "cholesterol": -0.022980938705880097,
+    "glucose": -0.035031617809413995
+  },
+  "features": [
+    "age",
+    "gender",
+    "bmi",
+    "exercise",
+    "smoking",
+    "alcohol",
+    "systolic",
+    "cholesterol",
+    "glucose"
+  ],
+  "r2_score": 0.5691058794448949
+}

@@ -1,12 +1,33 @@
 import { calculateLifespan } from './healthPredictEngine';
 import { predictLife, explain } from './gbdtEngine';
-import modelData from './model.json';
+import { predictLinear } from './linearModel';
+import defaultModelData from './model.json';
+
+let activeModel = defaultModelData;
 
 export const loadModel = async (onProgress) => {
-  // Model is loaded via static import for speed
-  if (onProgress) onProgress({ model: 'AI Engine (GBDT)', current: 100, total: 100 });
+  try {
+    const savedModel = localStorage.getItem('lifespanx_custom_model');
+    if (savedModel) {
+      activeModel = JSON.parse(savedModel);
+      console.log("Loaded custom model from storage:", activeModel.version);
+    } else {
+      activeModel = defaultModelData;
+    }
+  } catch (e) {
+    console.error("Failed to load custom model", e);
+    activeModel = defaultModelData;
+  }
+  
+  if (onProgress) onProgress({ 
+    model: activeModel.algorithm || 'AI Engine (GBDT)', 
+    current: 100, 
+    total: 100 
+  });
   return true;
 };
+
+export const getActiveModel = () => activeModel;
 
 const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
 
@@ -14,61 +35,74 @@ const clamp = (val, min, max) => Math.min(max, Math.max(min, val));
  * Fast, deterministic baseline prediction (Instant)
  */
 export const predictLifespanFast = (userData) => {
-  const result = calculateLifespan(userData);
+  const prediction = predictLinear(userData);
   const currentAge = parseFloat(userData.age) || 30;
   
   return {
-    prediction: result.prediction,
-    biologicalAge: parseFloat((currentAge + 80 - result.prediction).toFixed(1)),
-    base: result.base,
-    featureImportance: Object.entries(result.modifiers).map(([name, impact]) => ({ name, impact })),
+    prediction: Math.round(prediction * 10) / 10,
+    biologicalAge: parseFloat((currentAge + 80 - prediction).toFixed(1)),
+    base: userData.gender === 'female' ? 82 : 79,
+    featureImportance: [],
     recommendations: { positive: ["AI Insights Loading..."], negative: ["Calibrating Engine..."] },
     survivalCurve: [],
-    confidenceInterval: [result.prediction - 5, result.prediction + 5],
-    modelUsed: 'Deterministic Baseline',
+    confidenceInterval: [prediction - 4, prediction + 4],
+    modelUsed: 'Linear ML Baseline',
     isBaseline: true
   };
 };
 
 export const predictLifespan = async (userData) => {
   try {
-    // 1. Run GBDT Prediction
-    const result = predictLife(modelData, userData);
-    const prediction = result.predicted_lifespan;
-    
-    // 2. Run Explanation Engine
-    const explanation = explain(userData, prediction);
-    
-    // 3. Map to UI format
-    const currentAge = parseFloat(userData.age) || 30;
-    
-    // Survival curve (Deterministic based on prediction)
-    const survivalCurve = Array.from({length: 19}, (_, i) => {
-      const age = 20 + i * 5;
-      const prob = age > prediction ? Math.exp(-(age-prediction)/10) : 1 - 0.1 * Math.exp((age-prediction)/10);
-      return { age, probability: clamp(prob * 100, 0, 100) };
+    // 1. Try to fetch from Flask API
+    const response = await fetch('http://localhost:5001/predict', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
     });
+
+    if (response.ok) {
+      const apiResult = await response.json();
+      const prediction = apiResult.prediction;
+      const currentAge = parseFloat(userData.age) || 30;
+
+      return {
+        prediction,
+        biologicalAge: parseFloat((currentAge + 80 - prediction).toFixed(1)),
+        base: userData.gender === 'female' ? 82 : 79,
+        featureImportance: [], // Could be fetched from API
+        recommendations: { positive: ["AI Insights from Cloud Engine"], negative: ["Advanced Analysis Complete"] },
+        survivalCurve: [],
+        confidenceInterval: apiResult.confidence_interval,
+        modelUsed: 'Advanced Cloud ML (RF)',
+        isApi: true
+      };
+    }
+    
+    // 2. Fallback to Local GBDT Engine if API fails
+    const result = predictLife(activeModel, userData);
+    const prediction = result.predicted_lifespan;
+    const explanation = explain(userData, prediction);
+    const currentAge = parseFloat(userData.age) || 30;
 
     return { 
       prediction,
       biologicalAge: parseFloat((currentAge + 80 - prediction).toFixed(1)),
-      base: userData.gender === 'female' ? 81 : 79,
+      base: userData.gender === 'female' ? 82 : 79,
       featureImportance: [
         ...explanation.risk_factors.map(r => ({ name: r.factor, impact: parseFloat(r.impact) })),
         ...explanation.protective_factors.map(p => ({ name: p.factor, impact: parseFloat(p.benefit) }))
       ],
       explanation, 
       recommendations: { 
-        positive: explanation.protective_factors.map(f => `${f.factor}: ${f.benefit} - ${f.reason}`),
+        positive: explanation.protective_factors.map(f => `${f.factor}: ${f.benefit}`),
         negative: explanation.improvements.map(i => `${i.action} (+${i.gain_years} yrs)`)
       },
-      survivalCurve,
+      survivalCurve: [],
       confidenceInterval: [result.confidence_low, result.confidence_high],
-      modelUsed: 'GBDT Adaptive Engine' 
+      modelUsed: 'Local GBDT Hybrid' 
     };
   } catch (e) {
-    console.error("GBDT Inference error:", e);
-    // Fallback to fast prediction
+    console.warn("API/Hybrid inference failed, falling back to Linear Baseline:", e);
     return predictLifespanFast(userData);
   }
 };

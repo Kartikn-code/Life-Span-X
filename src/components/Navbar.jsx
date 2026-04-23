@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, BrainCircuit } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useUser } from '../context/UserContext';
 import Logo from './Logo';
@@ -74,6 +74,17 @@ const Navbar = () => {
           aria-label="Toggle Theme"
         >
           {theme === 'dark' ? <Sun className="w-8 h-8 text-amber" /> : <Moon className="w-8 h-8 text-indigo-600" />}
+        </button>
+
+        {/* AI Lab Link (Admin) */}
+        <button
+          onClick={() => navigate('/ai-lab')}
+          className={`p-3 rounded-2xl transition-all duration-300 ${
+            location.pathname === '/ai-lab' ? 'bg-teal text-slate-950' : 'text-gray-400 hover:text-teal'
+          }`}
+          title="AI Research Lab"
+        >
+          <BrainCircuit className="w-8 h-8" />
         </button>
       </div>
     </nav>

@@ -9,6 +9,7 @@ import Timeline from './pages/Timeline';
 import ActionPlan from './pages/ActionPlan';
 import ManualHistory from './pages/ManualHistory';
 import Science from './pages/Science';
+import AILab from './pages/AILab';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import { UserProvider } from './context/UserContext'; // Assuming UserProvider exists based on Dashboard.jsx
@@ -32,6 +33,7 @@ function App() {
                 <Route path="/action-plan" element={<ActionPlan />} />
                 <Route path="/history" element={<ManualHistory />} />
                 <Route path="/science" element={<Science />} />
+                <Route path="/ai-lab" element={<AILab />} />
               </Routes>
             </div>
             <footer className="w-full text-center py-4 bg-transparent backdrop-blur-sm border-t border-border-light/10 dark:border-border-dark/10 text-xs text-gray-500 fixed bottom-0 z-50 print:hidden transition-colors duration-300">
