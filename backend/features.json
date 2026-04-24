@@ -1,1 +1,40 @@
-["age", "gender", "bmi", "exercise", "smoking", "alcohol", "systolic", "cholesterol", "glucose"]
+{
+  "features": [
+    "age",
+    "bmi",
+    "blood_pressure",
+    "cholesterol",
+    "glucose",
+    "sleep_hours",
+    "gender",
+    "smoking",
+    "alcohol",
+    "heart_disease",
+    "diabetes",
+    "stroke",
+    "exercise_level",
+    "stress_level"
+  ],
+  "metrics": {
+    "r2": 0.8346505783584587,
+    "mae": 1.3610111734929105
+  },
+  "n_samples": 16310,
+  "trained_at": "2026-04-25T02:24:48.847672",
+  "importances": {
+    "bmi": 0.3876288212502124,
+    "glucose": 0.22057996388692575,
+    "cholesterol": 0.21888370470535423,
+    "alcohol": 0.1450985369429021,
+    "age": 0.027808973214605563,
+    "blood_pressure": 0.0,
+    "sleep_hours": 0.0,
+    "gender": 0.0,
+    "smoking": 0.0,
+    "heart_disease": 0.0,
+    "diabetes": 0.0,
+    "stroke": 0.0,
+    "exercise_level": 0.0,
+    "stress_level": 0.0
+  }
+}

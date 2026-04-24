@@ -13,8 +13,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
-    "@tensorflow/tfjs": "^4.22.0",
-    "@vladmandic/face-api": "^1.7.15",
     "d3": "^7.9.0",
     "framer-motion": "^12.38.0",
     "html2canvas": "^1.4.1",

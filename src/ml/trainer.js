@@ -15,8 +15,7 @@ const mse = (y) => variance(y) * y.length;
 const FEATURE_NAMES = [
   'age', 'gender', 'bmi', 'exercise_level', 'smoking', 'alcohol',
   'blood_pressure', 'cholesterol', 'glucose', 'heart_disease',
-  'diabetes', 'stroke', 'sleep_hours', 'stress_level',
-  'fruit_intake', 'vegetable_intake', 'processed_food'
+  'diabetes', 'stroke', 'sleep_hours', 'stress_level'
 ];
 
 function normalizeRow(row) {
@@ -99,11 +98,25 @@ function buildTree(X, y, depth, maxDepth = 4, minLeaf = 5) {
   };
 }
 
-function predictTree(node, x) {
-  if (node.v !== undefined) return node.v;
-  return x[node.f] <= node.t ? predictTree(node.l, x) : predictTree(node.r, x);
+export function predictLife(model, row) {
+  if (!model || !model.trees) return null;
+  const x = normalizeRow(row);
+  let prediction = model.base_prediction;
+  for (const tree of model.trees) {
+    prediction += model.learning_rate * predictTree(tree, x);
+  }
+  return {
+    predicted_lifespan: parseFloat(prediction.toFixed(1)),
+    confidence_low: parseFloat((prediction - (model.metrics?.mae || 3.0)).toFixed(1)),
+    confidence_high: parseFloat((prediction + (model.metrics?.mae || 3.0)).toFixed(1))
+  };
 }
 
+export function predictTree(node, x) {
+  if (node.v !== undefined) return node.v;
+  const val = x[node.f];
+  return val <= node.t ? predictTree(node.l, x) : predictTree(node.r, x);
+}
 /**
  * Main Trainer Function
  */
@@ -189,10 +202,7 @@ export function generateSyntheticData(n = 500) {
             diabetes: Math.random() > 0.92 ? 1 : 0,
             stroke: Math.random() > 0.95 ? 1 : 0,
             sleep_hours: 5 + Math.random() * 4,
-            stress_level: 1 + Math.floor(Math.random() * 5),
-            fruit_intake: Math.random() * 5,
-            vegetable_intake: Math.random() * 5,
-            processed_food: Math.floor(Math.random() * 3)
+            stress_level: 1 + Math.floor(Math.random() * 5)
         });
     }
     return data;

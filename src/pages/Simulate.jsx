@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { predictLifespan } from '../ml/predict';
+import { runSimulation } from '../ml/simulate';
 import LifeScoreGauge from '../components/LifeScoreGauge';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Save, Settings, Zap, Activity } from 'lucide-react';
@@ -63,7 +63,7 @@ export default function Simulate() {
 
     // Debounce the prediction call to avoid API flooding
     const timer = setTimeout(async () => {
-      const result = await predictLifespan(simulatedUser);
+      const result = await runSimulation(userData, simulatedUser);
       setSimData(result);
     }, 300);
 
