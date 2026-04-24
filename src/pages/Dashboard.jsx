@@ -138,7 +138,8 @@ export default function Dashboard() {
   const modelUsed = p.modelUsed || 'Neural Engine';
 
   const currentAge = parseFloat(userData?.age) || 30;
-  const score = Math.min(100, Math.max(0, (prediction / 100) * 100));
+  const currentPrediction = predictions?.prediction || 75;
+  const score = Math.min(100, Math.max(0, (currentPrediction / 100) * 100));
   
   const riskLevel = score < 50 ? 'HIGH' : score < 75 ? 'MODERATE' : 'LOW';
   const riskColor = riskLevel === 'HIGH' ? 'text-danger border-danger' : riskLevel === 'MODERATE' ? 'text-amber border-amber' : 'text-teal border-teal';

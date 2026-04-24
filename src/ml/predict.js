@@ -116,7 +116,7 @@ export const predictBatch = async (users) => {
 
   // 1. Try Flask API /predict-batch
   try {
-    const response = await fetch(`${API_URL}/predict-batch`, {
+    const response = await fetch(`${ML_API_URL}/predict-batch`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(normalizedUsers)
@@ -161,7 +161,7 @@ export const predictLifespan = async (userData) => {
   
   // 1. Try Flask API
   try {
-    const response = await fetch(`${API_URL}/predict`, {
+    const response = await fetch(`${ML_API_URL}/predict`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(normalizedData)

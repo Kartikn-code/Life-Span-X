@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: './',
+  base: '/',
   plugins: [react()],
   build: {
     sourcemap: false,
@@ -18,18 +18,9 @@ export default defineConfig({
         },
       },
     },
-    // For newer Vite versions using Rolldown
-    rolldownOptions: {
-      output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
-        },
-      },
-    },
   },
+  // Ensure console logs are kept for production debugging during demo
   esbuild: {
-    drop: ['console', 'debugger'],
+    drop: [], 
   },
 })

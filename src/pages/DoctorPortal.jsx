@@ -11,7 +11,13 @@ import { useUser } from '../context/UserContext';
 import { predictBatch, predictLifespan } from '../ml/predict';
 import { normalizeUserData } from '../ml/normalizeUserData';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const rawApiUrl = import.meta.env.VITE_API_URL || 
+  (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
+    ? 'http://localhost:5001' 
+    : '/api');
+
+// Clean URL: remove trailing slash
+const API_URL = rawApiUrl.endsWith('/') ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 export default function DoctorPortal() {
   const { theme } = useTheme();
