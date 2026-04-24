@@ -10,13 +10,29 @@ import joblib
 import os
 import json
 import argparse
-import time
+from supabase import create_client, Client
+from dotenv import load_dotenv
+
+# Load env vars
+load_dotenv()
 
 # Feature Names and Types
 NUMERIC_FEATURES = ['age', 'bmi', 'blood_pressure', 'cholesterol', 'glucose', 'sleep_hours']
 BINARY_FEATURES = ['gender', 'smoking', 'alcohol', 'heart_disease', 'diabetes', 'stroke']
 ORDINAL_FEATURES = ['exercise_level', 'stress_level']
 ALL_FEATURES = NUMERIC_FEATURES + BINARY_FEATURES + ORDINAL_FEATURES
+
+# Supabase Setup
+SUPABASE_URL = os.environ.get('SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+
+def get_supabase():
+    if SUPABASE_URL and SUPABASE_KEY:
+        try:
+            return create_client(SUPABASE_URL, SUPABASE_KEY)
+        except Exception as e:
+            print(f"Cloud Connection Failed: {e}")
+    return None
 
 def generate_realistic_data(n=10000):
     np.random.seed(42)
@@ -61,10 +77,7 @@ def generate_realistic_data(n=10000):
     return X, y
 
 def map_headers(df):
-    """Deep synonym mapping for clinical data standard compatibility"""
-    # Standardize column names (remove extra spaces, lowercase)
     df.columns = [c.strip() for c in df.columns]
-    
     mapping = {
         'lifespan': ['Life expectancy', 'Expected Lifespan', 'Target', 'years', 'longevity'],
         'age': ['Age', 'Patient Age', 'Individual Age'],
@@ -82,27 +95,18 @@ def map_headers(df):
         'sleep_hours': ['Sleep', 'sleep', 'hours_of_sleep', 'Sleep Duration'],
         'stress_level': ['Stress', 'stress', 'mental_health', 'Stress Level']
     }
-    
     new_cols = {}
     for canonical, synonyms in mapping.items():
         for syn in synonyms:
             if syn in df.columns:
                 new_cols[syn] = canonical
                 break
-    
     df = df.rename(columns=new_cols)
-    
-    # If age is missing but Year is present, WHO datasets are aggregated, 
-    # so we assign a realistic median age distribution for training stability.
     if 'age' not in df.columns:
         df['age'] = np.random.randint(25, 80, size=len(df))
-        
-    # Force features to numeric
     for col in df.columns:
         if col in ALL_FEATURES or col == 'lifespan':
             df[col] = pd.to_numeric(df[col], errors='coerce')
-    
-    # Fill defaults
     for f in ALL_FEATURES:
         if f not in df.columns:
             df[f] = 0
@@ -111,84 +115,84 @@ def map_headers(df):
         elif f == 'sleep_hours': df[f] = df[f].fillna(7)
         elif f in ['stress_level', 'exercise_level']: df[f] = df[f].fillna(2)
         else: df[f] = df[f].fillna(0)
-            
     return df
 
 def train_advanced(data_path=None):
+    supabase = get_supabase()
     data_dir = os.path.join(os.path.dirname(__file__), 'data')
     os.makedirs(data_dir, exist_ok=True)
     master_path = os.path.join(data_dir, 'master_training_data.csv')
     
     if data_path:
-        print(f"Loading and Merging new data from {data_path}...")
+        print(f"Processing new data from {data_path}...")
         try:
-            if data_path.endswith('.xlsx'):
-                df_new = pd.read_excel(data_path, engine='openpyxl')
-            else:
-                df_new = pd.read_csv(data_path)
-            
+            df_new = pd.read_excel(data_path, engine='openpyxl') if data_path.endswith('.xlsx') else pd.read_csv(data_path)
             df_new = map_headers(df_new)
-            
-            # Prepare for merging
             X_new = df_new[ALL_FEATURES]
-            if 'lifespan' in df_new.columns and not df_new['lifespan'].isnull().all():
-                y_new = df_new['lifespan'].fillna(78.0)
-            else:
-                print("No target 'lifespan' found. Generating via health metrics...")
-                y_new = 82.0 - (X_new['bmi'] - 22.5).clip(0)*0.4 - X_new['smoking']*10 + X_new['exercise_level']*2.5
+            y_new = df_new['lifespan'].fillna(78.0) if 'lifespan' in df_new.columns else 82.0 - (X_new['bmi'] - 22.5).clip(0)*0.4 - X_new['smoking']*10 + X_new['exercise_level']*2.5
             
             df_clean = X_new.copy()
             df_clean['lifespan'] = y_new
             df_clean = df_clean.dropna(subset=['lifespan'])
             
-            # Cumulative Merge
+            # Sync to Cloud (Supabase)
+            if supabase:
+                print("☁️ Syncing data to Supabase Cloud Storage...")
+                records = df_clean.to_dict('records')
+                # Batch insert (limit to 1000 per call for safety)
+                for i in range(0, len(records), 1000):
+                    supabase.table('training_data').insert(records[i:i+1000]).execute()
+            
+            # Update Local Master
             if os.path.exists(master_path):
                 df_master = pd.read_csv(master_path)
-                df_combined = pd.concat([df_master, df_clean], ignore_index=True)
-                df_combined = df_combined.drop_duplicates()
+                df_combined = pd.concat([df_master, df_clean], ignore_index=True).drop_duplicates()
                 df_combined.to_csv(master_path, index=False)
-                print(f"Memory Extended: Database now has {len(df_combined)} unique clinical records.")
             else:
                 df_clean.to_csv(master_path, index=False)
                 df_combined = df_clean
-                print(f"Initialized Memory: {len(df_combined)} records saved.")
-                
-            X = df_combined[ALL_FEATURES]
-            y = df_combined['lifespan']
         except Exception as e:
-            print(f"Data Processing Error: {e}")
+            print(f"❌ Data Sync Error: {e}")
             return
-    else:
-        if os.path.exists(master_path):
-            print(f"Training on Master database records...")
-            df_master = pd.read_csv(master_path)
-            X = df_master[ALL_FEATURES]
-            y = df_master['lifespan']
-        else:
-            print("No data found. Generating 10,000 synthetic samples...")
-            X, y = generate_realistic_data(10000)
     
-    # Save a copy for inspection
-    X.assign(lifespan=y).to_csv(os.path.join(data_dir, 'last_training_data.csv'), index=False)
+    # Load for Training: Try Cloud first, then Local
+    df_train = None
+    if supabase:
+        try:
+            print("🌐 Fetching latest clinical records from Cloud...")
+            response = supabase.table('training_data').select("*").execute()
+            if response.data:
+                df_train = pd.DataFrame(response.data).drop(columns=['id', 'created_at'], errors='ignore')
+                print(f"✅ Loaded {len(df_train)} cloud records.")
+        except Exception as e:
+            print(f"⚠️ Cloud fetch failed, falling back to local: {e}")
+
+    if df_train is None:
+        if os.path.exists(master_path):
+            print("💾 Loading from Local Master Database...")
+            df_train = pd.read_csv(master_path)
+        else:
+            print("🎲 Generating Synthetic Baseline...")
+            X, y = generate_realistic_data(10000)
+            df_train = X.assign(lifespan=y)
+
+    X = df_train[ALL_FEATURES]
+    y = df_train['lifespan']
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
     preprocessor = ColumnTransformer(transformers=[
         ('num', StandardScaler(), NUMERIC_FEATURES),
         ('pass', 'passthrough', BINARY_FEATURES + ORDINAL_FEATURES)
     ])
+    pipeline = Pipeline([('preprocessor', preprocessor), ('model', RandomForestRegressor(n_estimators=300, max_depth=15, min_samples_leaf=3, random_state=42))])
     
-    # Increased estimators for better accuracy with combined data
-    model = RandomForestRegressor(n_estimators=300, max_depth=15, min_samples_leaf=3, random_state=42)
-    pipeline = Pipeline([('preprocessor', preprocessor), ('model', model)])
-    
-    print(f"Retraining Brain on {len(X)} records...")
+    print(f"🧠 Training Brain on {len(X)} clinical records...")
     pipeline.fit(X_train, y_train)
     
     mae = mean_absolute_error(y_test, pipeline.predict(X_test))
     r2 = r2_score(y_test, pipeline.predict(X_test))
     
-    print(f"\n--- Cumulative Retraining Summary ---\nTotal Data Points: {len(X)}\nR² Score: {r2:.4f}\nMAE: {mae:.2f} years")
+    print(f"\n--- AI Brain Summary ---\nMemory Capacity: {len(X)} Records\nIntelligence (R²): {r2:.4f}\nError Margin (MAE): {mae:.2f} years")
     
     feat_imp = sorted(zip(ALL_FEATURES, pipeline.named_steps['model'].feature_importances_), key=lambda x: x[1], reverse=True)
     backend_dir = os.path.dirname(__file__)
@@ -200,7 +204,7 @@ def train_advanced(data_path=None):
             "n_samples": len(X), "trained_at": pd.Timestamp.now().isoformat(),
             "importances": {name: float(imp) for name, imp in feat_imp}
         }, f, indent=2)
-    print(f"Model successfully saved to {backend_dir}")
+    print("✨ Model globally synced and saved.")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
