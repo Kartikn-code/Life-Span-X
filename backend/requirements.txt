@@ -8,3 +8,8 @@ python-dotenv
 supabase
 openpyxl
 gunicorn
+postgrest
+httpx
+pydantic
+pydantic-core
+typing-extensions
