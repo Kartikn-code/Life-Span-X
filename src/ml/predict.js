@@ -4,10 +4,13 @@ import fallbackModel from './model.json';
 
 // Dynamic API URL for production deployment
 // Auto-detect API: localhost:5001 for dev, /api for Vercel production
-const ML_API_URL = import.meta.env.VITE_API_URL || 
+const rawUrl = import.meta.env.VITE_API_URL || 
   (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
     ? 'http://localhost:5001' 
     : '/api');
+
+// Prevent double slashes: remove trailing slash if exists
+const ML_API_URL = rawUrl.endsWith('/') ? rawUrl.slice(0, -1) : rawUrl;
 const FEATURES_JSON_URL = '/features.json'; 
 
 let customModel = null;
