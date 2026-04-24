@@ -192,14 +192,29 @@ def train_advanced(data_path=None):
     X = df_train[ALL_FEATURES]
     y = df_train['lifespan']
     
+    # Render Free Tier Protection: If dataset is too large, use a smart sample of 5,000
+    if len(X) > 5000:
+        print(f"📉 Large dataset detected ({len(X)} rows). Optimizing for Cloud RAM (using 5,000 sample records)...")
+        indices = np.random.choice(len(X), 5000, replace=False)
+        X = X.iloc[indices]
+        y = y.iloc[indices]
+    
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     preprocessor = ColumnTransformer(transformers=[
         ('num', StandardScaler(), NUMERIC_FEATURES),
         ('pass', 'passthrough', BINARY_FEATURES + ORDINAL_FEATURES)
     ])
-    pipeline = Pipeline([('preprocessor', preprocessor), ('model', RandomForestRegressor(n_estimators=300, max_depth=15, min_samples_leaf=3, random_state=42))])
+    # Optimized for Cloud (Render Free Tier) Memory Limits
+    model = RandomForestRegressor(
+        n_estimators=100, 
+        max_depth=10, 
+        min_samples_leaf=5, 
+        random_state=42,
+        n_jobs=1 # Use single core to save RAM
+    )
+    pipeline = Pipeline([('preprocessor', preprocessor), ('model', model)])
     
-    print(f"🧠 Training Brain on {len(X)} clinical records...")
+    print(f"🧠 Training Brain on {len(X)} clinical records (Memory Optimized)...")
     pipeline.fit(X_train, y_train)
     
     mae = mean_absolute_error(y_test, pipeline.predict(X_test))
