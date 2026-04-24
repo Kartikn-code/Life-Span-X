@@ -92,16 +92,15 @@ export default function Dashboard() {
       }
     };
 
-    if (engineEnabled && (!predictions || !predictions.prediction || predictions.isBaseline)) {
+    if (engineEnabled) {
+      console.log("🚀 User Data changed, requesting fresh AI prediction...");
       setError(null);
       runPrediction();
-    } else if (!engineEnabled) {
-      setError("Neural Engine has to be turned on to run calculations.");
-      setLoading(false);
     } else {
+      setError("Neural Engine is currently disabled.");
       setLoading(false);
     }
-  }, [userData, predictions, navigate, setPredictions, engineEnabled]);
+  }, [userData, engineEnabled, navigate]);
 
   if (error) {
     return (
