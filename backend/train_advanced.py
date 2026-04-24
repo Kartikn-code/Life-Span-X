@@ -22,9 +22,9 @@ BINARY_FEATURES = ['gender', 'smoking', 'alcohol', 'heart_disease', 'diabetes', 
 ORDINAL_FEATURES = ['exercise_level', 'stress_level']
 ALL_FEATURES = NUMERIC_FEATURES + BINARY_FEATURES + ORDINAL_FEATURES
 
-# Supabase Setup
-SUPABASE_URL = os.environ.get('SUPABASE_URL')
-SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
+# Supabase Setup (Handles both Backend and Vite-prefixed env vars)
+SUPABASE_URL = os.environ.get('SUPABASE_URL') or os.environ.get('VITE_SUPABASE_URL')
+SUPABASE_KEY = os.environ.get('SUPABASE_KEY') or os.environ.get('VITE_SUPABASE_ANON_KEY')
 
 def get_supabase():
     if SUPABASE_URL and SUPABASE_KEY:
@@ -172,9 +172,15 @@ def train_advanced(data_path=None):
             print("💾 Loading from Local Master Database...")
             df_train = pd.read_csv(master_path)
         else:
-            print("🎲 Generating Synthetic Baseline...")
-            X, y = generate_realistic_data(10000)
+            print("🎲 No Cloud or Local records found. Generating 2,000 records to bootstrap the system...")
+            X, y = generate_realistic_data(2000)
             df_train = X.assign(lifespan=y)
+            # Bootstrapping: Save this initial intelligence to the cloud
+            if supabase:
+                print("📤 Bootstrapping Supabase Cloud with initial records...")
+                records = df_train.to_dict('records')
+                for i in range(0, len(records), 1000):
+                    supabase.table('training_data').insert(records[i:i+1000]).execute()
 
     X = df_train[ALL_FEATURES]
     y = df_train['lifespan']
