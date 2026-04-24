@@ -135,13 +135,17 @@ def train_advanced(data_path=None):
             df_clean['lifespan'] = y_new
             df_clean = df_clean.dropna(subset=['lifespan'])
             
-            # Sync to Cloud (Supabase)
+            # Sync to Cloud (Supabase) - Wrap in try/except for graceful fallback
             if supabase:
-                print("☁️ Syncing data to Supabase Cloud Storage...")
-                records = df_clean.to_dict('records')
-                # Batch insert (limit to 1000 per call for safety)
-                for i in range(0, len(records), 1000):
-                    supabase.table('training_data').insert(records[i:i+1000]).execute()
+                try:
+                    print("☁️ Syncing data to Supabase Cloud Storage...")
+                    records = df_clean.to_dict('records')
+                    for i in range(0, len(records), 1000):
+                        supabase.table('training_data').insert(records[i:i+1000]).execute()
+                    print("✅ Cloud sync successful.")
+                except Exception as cloud_err:
+                    print(f"⚠️ Cloud Sync failed (Table might not exist): {cloud_err}")
+                    print("💾 Falling back to Local Master Database.")
             
             # Update Local Master
             if os.path.exists(master_path):
@@ -175,12 +179,15 @@ def train_advanced(data_path=None):
             print("🎲 No Cloud or Local records found. Generating 2,000 records to bootstrap the system...")
             X, y = generate_realistic_data(2000)
             df_train = X.assign(lifespan=y)
-            # Bootstrapping: Save this initial intelligence to the cloud
+            # Bootstrapping: Save this initial intelligence to the cloud - Wrap in try/except
             if supabase:
-                print("📤 Bootstrapping Supabase Cloud with initial records...")
-                records = df_train.to_dict('records')
-                for i in range(0, len(records), 1000):
-                    supabase.table('training_data').insert(records[i:i+1000]).execute()
+                try:
+                    print("📤 Bootstrapping Supabase Cloud with initial records...")
+                    records = df_train.to_dict('records')
+                    for i in range(0, len(records), 1000):
+                        supabase.table('training_data').insert(records[i:i+1000]).execute()
+                except Exception as boot_err:
+                    print(f"⚠️ Cloud Bootstrap failed (Table might not exist): {boot_err}")
 
     X = df_train[ALL_FEATURES]
     y = df_train['lifespan']
