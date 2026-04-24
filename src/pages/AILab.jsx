@@ -22,7 +22,7 @@ import * as XLSX from 'xlsx';
 import { loadModel } from '../ml/predict';
 
 const DEV_KEY = "Password@123";
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function AILab() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);

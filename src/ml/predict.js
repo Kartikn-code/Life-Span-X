@@ -3,7 +3,8 @@ import { predictLife } from './trainer';
 import fallbackModel from './model.json';
 
 // Dynamic API URL for production deployment
-const ML_API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5001';
+// Auto-detect API for Vercel Multi-Service or local dev
+const ML_API_URL = import.meta.env.VITE_API_URL || '/api';
 const FEATURES_JSON_URL = '/features.json'; 
 
 let customModel = null;
