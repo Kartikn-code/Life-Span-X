@@ -20,7 +20,10 @@ except Exception:
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 32 * 1024 * 1024 # 32MB
-CORS(app)
+
+# Secure CORS: Allow specific frontend URL from env, fallback to allow all for local dev
+allowed_origins = os.environ.get('ALLOWED_ORIGINS', '*')
+CORS(app, resources={r"/*": {"origins": allowed_origins.split(',')}})
 
 # Paths
 BASE_DIR = os.path.dirname(__file__)
