@@ -14,7 +14,12 @@ import {
   Save,
   Trash2,
   Download,
-  FileJson
+  FileJson,
+  ShieldAlert,
+  Upload,
+  BarChart2,
+  TrendingUp,
+  FileText
 } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 import Papa from 'papaparse';
@@ -65,7 +70,27 @@ export default function AILab() {
     setLogs(prev => [...prev, { time: new Date().toLocaleTimeString(), msg, type }].slice(-20));
   };
 
-  const onDrop = useCallback((acceptedFiles) => {
+  const handleReset = async () => {
+    if (!window.confirm("⚠️ Are you sure? This will PERMANENTLY DELETE all trained models and historical data. This cannot be undone.")) return;
+    
+    setIsTraining(true);
+    try {
+      const response = await fetch(`${API_URL}/reset-engine`, { method: 'POST' });
+      const data = await response.json();
+      if (response.ok) {
+        alert("✅ Engine Reset Complete. The system is now a clean slate.");
+        window.location.reload(); // Refresh to clear local states
+      } else {
+        throw new Error(data.error);
+      }
+    } catch (err) {
+      alert("❌ Reset Failed: " + err.message);
+    } finally {
+      setIsTraining(false);
+    }
+  };
+
+  const onDrop = useCallback(async (acceptedFiles) => {
     const file = acceptedFiles[0];
     if (!file) return;
     setUploadedFile(file);
@@ -175,7 +200,17 @@ export default function AILab() {
           <h1 className="text-4xl font-display font-bold bg-clip-text text-transparent bg-gradient-to-r from-teal to-blue-500 mb-2">AI Neural Lab</h1>
           <div className="flex items-center gap-2 text-xs font-bold text-teal/70 uppercase tracking-widest"><Cpu size={14} /> Remote RandomForest Training Console</div>
         </div>
-        <button onClick={() => { localStorage.removeItem('lifespan_lab_auth'); setIsAuthenticated(false); }} className="text-gray-500 hover:text-white text-sm">Logout</button>
+        <div className="flex items-center gap-6">
+          <button 
+            onClick={handleReset}
+            disabled={isTraining}
+            className="flex items-center gap-2 text-red-500/70 hover:text-red-500 text-xs font-bold uppercase tracking-widest transition-colors"
+          >
+            <ShieldAlert size={14} />
+            Reset Engine
+          </button>
+          <button onClick={() => { localStorage.removeItem('lifespan_lab_auth'); setIsAuthenticated(false); }} className="text-gray-500 hover:text-white text-sm">Logout</button>
+        </div>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
@@ -183,10 +218,17 @@ export default function AILab() {
           <div className="glass-panel p-6">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2"><Database size={18} className="text-blue-400" /> Training Data</h3>
             <div className="space-y-4">
-              <div {...getRootProps()} className={`border-2 border-dashed rounded-xl p-8 text-center transition-all ${isDragActive ? 'border-teal bg-teal/5' : 'border-border-dark/30 hover:border-teal/50 cursor-pointer'}`}>
+              <div 
+                {...getRootProps()} 
+                className={`border-2 border-dashed rounded-3xl p-12 text-center transition-all cursor-pointer
+                  ${isDragActive ? 'border-teal bg-teal/10' : 'border-slate-800 hover:border-slate-700'}`}
+              >
                 <input {...getInputProps()} />
-                <Database className="w-10 h-10 text-gray-500 mx-auto mb-3" />
-                <p className="text-sm text-gray-400">{uploadedFile ? uploadedFile.name : "Drag & drop dataset"}</p>
+                <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <Upload className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold mb-2">Upload Clinical Training Data</h3>
+                <p className="text-slate-500 text-sm">Drag and drop .csv, .xlsx or .json files</p>
               </div>
               <div className="relative">
                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-border-dark/20"></div></div>

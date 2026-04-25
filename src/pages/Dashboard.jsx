@@ -92,11 +92,14 @@ export default function Dashboard() {
       }
     };
 
-    if (engineEnabled) {
-      console.log("🚀 User Data changed, requesting fresh AI prediction...");
+    // Logic: Run prediction if we have user data and EITHER:
+    // 1. We don't have a prediction yet (First land)
+    // 2. The user data just changed (Slider moved)
+    if (engineEnabled && (!predictions || !predictions.prediction || userData)) {
+      console.log("🚀 Dashboard Active: Requesting Neural Engine Prediction...");
       setError(null);
       runPrediction();
-    } else {
+    } else if (!engineEnabled) {
       setError("Neural Engine is currently disabled.");
       setLoading(false);
     }
