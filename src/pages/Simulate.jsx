@@ -50,14 +50,14 @@ export default function Simulate() {
   useEffect(() => {
     if (!userData) return;
 
-    // Map simulation sliders back to the categorical/numeric inputs the engine expects
+    // Map simulation sliders to CONTINUOUS scales (0.0 to 1.0)
     const simulatedUser = {
       ...userData,
-      smoking: sliders.cigarettes > 0 ? 'yes' : 'never',
-      alcohol: sliders.alcohol_units > 0 ? 'yes' : 'no',
-      exercise_level: Math.min(3, Math.floor(sliders.exercise_days / 2)).toString(),
+      smoking: Math.min(1.0, sliders.cigarettes / 40).toString(),
+      alcohol: Math.min(1.0, sliders.alcohol_units / 21).toString(),
+      exercise_level: (sliders.exercise_days / 7).toString(),
       sleep_hours: sliders.sleep.toString(),
-      stress_level: Math.min(5, Math.ceil(sliders.stress / 2)).toString(),
+      stress_level: ((sliders.stress - 1) / 9).toString(),
       bmi: sliders.bmi
     };
 
@@ -209,7 +209,7 @@ export default function Simulate() {
           <div className="bg-teal/5 border border-teal/10 p-6 rounded-3xl">
              <p className="text-[11px] text-teal-800 dark:text-teal-400 leading-relaxed font-bold">
                <Zap className="w-3 h-3 inline mr-2" />
-               Counterfactual logic is processed in-browser. Adjusting these parameters simulates biological outcomes based on actuarial Gompertz mortality laws.
+               Counterfactual logic is processed via Cloud Neural Engine. Adjusting these parameters simulates biological outcomes based on a 14-feature Random Forest Regressor.
              </p>
           </div>
         </div>
