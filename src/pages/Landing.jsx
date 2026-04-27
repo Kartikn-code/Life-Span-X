@@ -160,8 +160,8 @@ export default function Landing() {
             className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start relative group"
           >
             <div className="flex flex-col sm:flex-row gap-4 w-full">
-              <button 
-                onClick={() => engineEnabled ? navigate('/onboarding') : null} 
+              <button
+                onClick={() => engineEnabled ? navigate('/onboarding') : null}
                 className={`btn-primary flex items-center justify-center gap-2 group text-lg py-3 px-8 transition-all duration-300 ${!engineEnabled ? 'bg-rose-500/20 text-rose-500 border-rose-500/30 cursor-not-allowed grayscale-[0.5]' : ''}`}
               >
                 {engineEnabled ? (
@@ -170,8 +170,8 @@ export default function Landing() {
                   <>Turn on Neural Engine</>
                 )}
               </button>
-              <button 
-                onClick={() => engineEnabled ? navigate('/doctor-portal') : null} 
+              <button
+                onClick={() => engineEnabled ? navigate('/doctor-portal') : null}
                 className={`btn-secondary flex items-center justify-center gap-2 transition-all duration-300 ${!engineEnabled ? 'border-rose-500/20 text-rose-500/50 cursor-not-allowed' : ''}`}
               >
                 {engineEnabled ? (
@@ -280,7 +280,7 @@ export default function Landing() {
                 LifeLytics utilizes a multi-layered analytical framework to quantify biological aging and longevity risk with clinical precision.
               </p>
             </div>
-            
+
             <div className="lg:w-2/3 grid sm:grid-cols-2 gap-6">
               {[
                 {
@@ -304,7 +304,7 @@ export default function Landing() {
                   icon: <Zap className="w-5 h-5 text-amber-500" />
                 }
               ].map((m, i) => (
-                <motion.div 
+                <motion.div
                   key={i}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
@@ -322,7 +322,7 @@ export default function Landing() {
             </div>
           </div>
         </div>
-        
+
         {/* Subtle background element */}
         <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 w-96 h-96 bg-teal/5 blur-[120px] rounded-full pointer-events-none"></div>
       </section>
@@ -332,11 +332,11 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-6">
           <div className="flex flex-col md:flex-row gap-16 items-center">
             <div className="md:w-1/2">
-              <h2 className="text-4xl font-bold mb-6 text-text-light dark:text-text-dark">Stop Guessing.<br/>Start Simulating.</h2>
+              <h2 className="text-4xl font-bold mb-6 text-text-light dark:text-text-dark">Stop Guessing.<br />Start Simulating.</h2>
               <p className="text-lg text-slate-800 dark:text-gray-300 mb-8 leading-relaxed">
                 Generic advice says "exercise more." LifeLytics calculates exactly how many years of biological aging you can reverse based on your current baseline.
               </p>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <HabitCard title="Quitting Smoking" impact="11.0" positive={true} delay={0.1} />
                 <HabitCard title="High Stress" impact="-8.5" positive={false} delay={0.2} />
@@ -344,71 +344,71 @@ export default function Landing() {
                 <HabitCard title="Heart Disease" impact="-10.0" positive={false} delay={0.4} />
               </div>
             </div>
-            
-             <div className="md:w-1/2 flex justify-center w-full">
-                <motion.div 
-                  initial={{ opacity: 0, x: 50 }}
-                  whileInView={{ opacity: 1, x: 0 }}
-                  viewport={{ once: true }}
-                  className="relative w-full max-w-md aspect-square rounded-full border border-teal/10 shadow-[0_0_80px_rgba(0,245,212,0.15)] flex items-center justify-center p-12 overflow-hidden"
-                >
-                  {/* High-Tech Radar Sweep */}
-                  <div className="absolute inset-0 bg-[conic-gradient(at_center,_var(--tw-gradient-stops))] from-teal/30 via-transparent to-transparent animate-[spin_8s_linear_infinite] rounded-full opacity-40"></div>
-                  
-                  {/* Solid Level Segments (Rings) */}
-                  <div className="absolute inset-4 rounded-full border-[2px] border-teal/20 border-t-teal border-b-teal/40 animate-[spin_12s_linear_infinite_reverse]"></div>
-                  <div className="absolute inset-8 rounded-full border-[1px] border-teal/10 border-l-teal/60 border-r-teal/60 animate-[spin_20s_linear_infinite]"></div>
-                  <div className="absolute inset-12 rounded-full border-[6px] border-teal/5 border-t-teal/30 border-b-teal/30 animate-[spin_15s_linear_infinite_reverse]"></div>
-                  
-                  {/* Outer Dashed Orbit */}
-                  <div className="absolute inset-0 rounded-full border border-dashed border-teal/30 animate-[spin_30s_linear_infinite]"></div>
-                  
-                  {/* Digital Data Stream Overlay */}
-                  <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden rounded-full">
-                    <motion.div 
-                      className="w-full h-[200%] bg-[linear-gradient(to_bottom,transparent,rgba(0,245,212,0.2),transparent)]"
-                      animate={{ y: ["-50%", "0%"] }}
-                      transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
-                    />
-                  </div>
-                  
-                  {/* Orbiting Biomarker Dots - Refactored for maximum smoothness */}
-                  <div className="absolute inset-0 animate-[spin_15s_linear_infinite]">
-                    {[0, 72, 144, 216, 288].map((angle, i) => (
-                      <div 
-                        key={i} 
-                        className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                        style={{ transform: `rotate(${angle}deg) translateY(-180px)` }}
-                      >
-                        <motion.div
-                          className="w-2.5 h-2.5 bg-teal rounded-full shadow-[0_0_15px_#00F5D4]"
-                          animate={{ 
-                            scale: [1, 1.5, 1],
-                            opacity: [0.4, 1, 0.4]
-                          }}
-                          transition={{ 
-                            duration: 2 + i, 
-                            repeat: Infinity, 
-                            ease: "easeInOut" 
-                          }}
-                        />
-                      </div>
-                    ))}
-                  </div>
 
-                  {/* Scientific Grid Pattern Overlay */}
-                  <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #00F5D4 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+            <div className="md:w-1/2 flex justify-center w-full">
+              <motion.div
+                initial={{ opacity: 0, x: 50 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                className="relative w-full max-w-md aspect-square rounded-full border border-teal/10 shadow-[0_0_80px_rgba(0,245,212,0.15)] flex items-center justify-center p-12 overflow-hidden"
+              >
+                {/* High-Tech Radar Sweep */}
+                <div className="absolute inset-0 bg-[conic-gradient(at_center,_var(--tw-gradient-stops))] from-teal/30 via-transparent to-transparent animate-[spin_8s_linear_infinite] rounded-full opacity-40"></div>
 
-                  <div className="relative z-10 text-center bg-background-light/40 dark:bg-background-dark/40 p-10 rounded-full backdrop-blur-sm border border-white/10">
-                     <Heart className="w-16 h-16 text-teal mx-auto mb-6 animate-pulse" />
-                     <h3 className="text-2xl font-rounded-bold mb-2 uppercase tracking-[0.1em]">Clinical Grade</h3>
-                     <p className="text-sm text-slate-600 dark:text-gray-400 font-medium leading-relaxed">
-                       Neuro-Architectural Validation: <br/>
-                       <span className="text-teal font-mono">4.2M+</span> Clinical Snapshots Processed.
-                     </p>
-                  </div>
-                </motion.div>
-             </div>
+                {/* Solid Level Segments (Rings) */}
+                <div className="absolute inset-4 rounded-full border-[2px] border-teal/20 border-t-teal border-b-teal/40 animate-[spin_12s_linear_infinite_reverse]"></div>
+                <div className="absolute inset-8 rounded-full border-[1px] border-teal/10 border-l-teal/60 border-r-teal/60 animate-[spin_20s_linear_infinite]"></div>
+                <div className="absolute inset-12 rounded-full border-[6px] border-teal/5 border-t-teal/30 border-b-teal/30 animate-[spin_15s_linear_infinite_reverse]"></div>
+
+                {/* Outer Dashed Orbit */}
+                <div className="absolute inset-0 rounded-full border border-dashed border-teal/30 animate-[spin_30s_linear_infinite]"></div>
+
+                {/* Digital Data Stream Overlay */}
+                <div className="absolute inset-0 opacity-20 pointer-events-none overflow-hidden rounded-full">
+                  <motion.div
+                    className="w-full h-[200%] bg-[linear-gradient(to_bottom,transparent,rgba(0,245,212,0.2),transparent)]"
+                    animate={{ y: ["-50%", "0%"] }}
+                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                  />
+                </div>
+
+                {/* Orbiting Biomarker Dots - Refactored for maximum smoothness */}
+                <div className="absolute inset-0 animate-[spin_15s_linear_infinite]">
+                  {[0, 72, 144, 216, 288].map((angle, i) => (
+                    <div
+                      key={i}
+                      className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1/2"
+                      style={{ transform: `rotate(${angle}deg) translateY(-180px)` }}
+                    >
+                      <motion.div
+                        className="w-2.5 h-2.5 bg-teal rounded-full shadow-[0_0_15px_#00F5D4]"
+                        animate={{
+                          scale: [1, 1.5, 1],
+                          opacity: [0.4, 1, 0.4]
+                        }}
+                        transition={{
+                          duration: 2 + i,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Scientific Grid Pattern Overlay */}
+                <div className="absolute inset-0 opacity-10 pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #00F5D4 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
+
+                <div className="relative z-10 text-center bg-background-light/40 dark:bg-background-dark/40 p-10 rounded-full backdrop-blur-sm border border-white/10">
+                  <Heart className="w-16 h-16 text-teal mx-auto mb-6 animate-pulse" />
+                  <h3 className="text-2xl font-rounded-bold mb-2 uppercase tracking-[0.1em]">Clinical Grade</h3>
+                  <p className="text-sm text-slate-600 dark:text-gray-400 font-medium leading-relaxed">
+                    Neuro-Architectural Validation: <br />
+                    <span className="text-teal font-mono">4.2M+</span> Clinical Snapshots Processed.
+                  </p>
+                </div>
+              </motion.div>
+            </div>
           </div>
           {/* Bottom Neural Net Background */}
           <div className="absolute bottom-0 left-0 w-full h-full -z-10 opacity-20 dark:opacity-10 pointer-events-none overflow-hidden flex items-center justify-center translate-y-1/2">
@@ -427,9 +427,9 @@ export default function Landing() {
             </div>
             <p className="text-slate-900 dark:text-gray-200 text-sm max-w-xs font-bold leading-relaxed">AI-powered lifespan simulation and personalized health intelligence platform.</p>
           </div>
-          
+
           <div className="flex flex-col sm:flex-row gap-12">
-            <div className="space-y-4">
+            {/* <div className="space-y-4">
               <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-teal border-b border-teal/20 pb-1 mb-3">Academic Team</h4>
               <div className="space-y-2">
                 {[
@@ -441,9 +441,9 @@ export default function Landing() {
                   <p key={i} className="text-[12px] font-bold text-slate-800 dark:text-gray-300">{name}</p>
                 ))}
               </div>
-            </div>
-            
-            <div className="space-y-4">
+            </div> */}
+
+            {/* <div className="space-y-4">
               <h4 className="text-[11px] font-black uppercase tracking-[0.2em] text-blue-500 border-b border-blue-500/20 pb-1 mb-3">Industry Experts</h4>
               <div className="space-y-2">
                 {[
@@ -453,7 +453,7 @@ export default function Landing() {
                   <p key={i} className="text-[12px] font-bold text-slate-800 dark:text-gray-300">{name}</p>
                 ))}
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
         <div className="max-w-7xl mx-auto mt-12 pt-8 border-t border-slate-200 dark:border-border-dark/10 text-center text-sm text-gray-500 flex flex-col md:flex-row justify-between items-center gap-4">
