@@ -51,10 +51,11 @@ export default function Simulate() {
     if (!userData) return;
 
     // Map simulation sliders to CONTINUOUS scales (0.0 to 1.0)
+    // recalibrated for extreme severity (Cigs up to 50, Alcohol up to 50)
     const simulatedUser = {
       ...userData,
-      smoking: Math.min(1.0, sliders.cigarettes / 40).toString(),
-      alcohol: Math.min(1.0, sliders.alcohol_units / 21).toString(),
+      smoking: (sliders.cigarettes / 50).toString(),
+      alcohol: (sliders.alcohol_units / 50).toString(),
       exercise_level: (sliders.exercise_days / 7).toString(),
       sleep_hours: sliders.sleep.toString(),
       stress_level: ((sliders.stress - 1) / 9).toString(),
